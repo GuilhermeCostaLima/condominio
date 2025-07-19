@@ -54,14 +54,18 @@ const Index = () => {
     setReservations(prev => [...prev, reservation]);
   };
 
-  const handleStatusChange = (id: string, status: Reservation['status']) => {
+  const handleStatusChange = (id: string, status: Reservation['status'], reason?: string) => {
     setReservations(prev => 
       prev.map(reservation => 
-        reservation.id === id ? { ...reservation, status } : reservation
+        reservation.id === id ? { 
+          ...reservation, 
+          status,
+          ...(status === 'cancelled' && reason ? { cancellationReason: reason } : {})
+        } : reservation
       )
     );
     
-    const statusText = status === 'confirmed' ? 'aprovada' : 'recusada';
+    const statusText = status === 'confirmed' ? 'aprovada' : 'cancelada';
     toast({
       title: "Status Atualizado",
       description: `Reserva ${statusText} com sucesso.`,
@@ -134,8 +138,7 @@ const Index = () => {
             <TabsContent value="reservations" className="mt-6">
               <ReservationList
                 reservations={reservations}
-                onStatusChange={handleStatusChange}
-                isAdmin={false}
+                showUserReservationsOnly={true}
               />
             </TabsContent>
 

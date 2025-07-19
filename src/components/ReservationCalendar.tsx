@@ -13,6 +13,7 @@ export interface Reservation {
   event: string;
   status: 'confirmed' | 'pending' | 'cancelled';
   contact: string;
+  cancellationReason?: string;
 }
 
 interface ReservationCalendarProps {

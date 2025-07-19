@@ -5,16 +5,31 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Users, Calendar, BarChart3, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { Reservation } from './ReservationCalendar';
+import CancelReservationDialog from './CancelReservationDialog';
 
 interface AdminPanelProps {
   reservations: Reservation[];
-  onStatusChange: (id: string, status: Reservation['status']) => void;
+  onStatusChange: (id: string, status: Reservation['status'], reason?: string) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
   reservations,
   onStatusChange
 }) => {
+  const [cancelDialog, setCancelDialog] = useState<{
+    isOpen: boolean;
+    reservation: Reservation | null;
+  }>({ isOpen: false, reservation: null });
+
+  const handleCancelClick = (reservation: Reservation) => {
+    setCancelDialog({ isOpen: true, reservation });
+  };
+
+  const handleCancelConfirm = (reason: string) => {
+    if (cancelDialog.reservation) {
+      onStatusChange(cancelDialog.reservation.id, 'cancelled', reason);
+    }
+  };
   const getStats = () => {
     const total = reservations.length;
     const pending = reservations.filter(r => r.status === 'pending').length;
@@ -164,7 +179,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => onStatusChange(reservation.id, 'cancelled')}
+                            onClick={() => handleCancelClick(reservation)}
                           >
                             <XCircle className="h-4 w-4 mr-2" />
                             Recusar
@@ -219,7 +234,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onStatusChange(reservation.id, 'cancelled')}
+                          onClick={() => handleCancelClick(reservation)}
                         >
                           Cancelar
                         </Button>
@@ -232,6 +247,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <CancelReservationDialog
+        isOpen={cancelDialog.isOpen}
+        onClose={() => setCancelDialog({ isOpen: false, reservation: null })}
+        onConfirm={handleCancelConfirm}
+        reservationDetails={cancelDialog.reservation ? {
+          residentName: cancelDialog.reservation.residentName,
+          date: cancelDialog.reservation.date,
+          timeSlot: cancelDialog.reservation.timeSlot,
+          event: cancelDialog.reservation.event
+        } : {
+          residentName: '',
+          date: '',
+          timeSlot: '',
+          event: ''
+        }}
+      />
     </div>
   );
 };

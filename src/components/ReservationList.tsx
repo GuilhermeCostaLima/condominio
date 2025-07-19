@@ -9,18 +9,21 @@ import { Reservation } from './ReservationCalendar';
 
 interface ReservationListProps {
   reservations: Reservation[];
-  onStatusChange: (id: string, status: Reservation['status']) => void;
+  onStatusChange?: (id: string, status: Reservation['status'], reason?: string) => void;
   isAdmin?: boolean;
+  showUserReservationsOnly?: boolean;
 }
 
 const ReservationList: React.FC<ReservationListProps> = ({
   reservations,
   onStatusChange,
-  isAdmin = false
+  isAdmin = false,
+  showUserReservationsOnly = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('upcoming');
+  const [sortBy, setSortBy] = useState<string>('date-desc');
 
   const getStatusColor = (status: Reservation['status']) => {
     switch (status) {
@@ -80,7 +83,19 @@ const ReservationList: React.FC<ReservationListProps> = ({
   const sortedReservations = filteredReservations.sort((a, b) => {
     const dateA = new Date(a.date + 'T00:00:00');
     const dateB = new Date(b.date + 'T00:00:00');
-    return dateB.getTime() - dateA.getTime();
+    
+    switch (sortBy) {
+      case 'date-asc':
+        return dateA.getTime() - dateB.getTime();
+      case 'date-desc':
+        return dateB.getTime() - dateA.getTime();
+      case 'name-asc':
+        return a.residentName.localeCompare(b.residentName);
+      case 'name-desc':
+        return b.residentName.localeCompare(a.residentName);
+      default:
+        return dateB.getTime() - dateA.getTime();
+    }
   });
 
   return (
@@ -88,25 +103,27 @@ const ReservationList: React.FC<ReservationListProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
-          Reservas
+          {showUserReservationsOnly ? 'Minhas Reservas' : 'Reservas'}
           <Badge variant="secondary" className="ml-auto">
             {filteredReservations.length} de {reservations.length}
           </Badge>
         </CardTitle>
         
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome, apartamento ou evento..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          {!showUserReservationsOnly && (
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, apartamento ou evento..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          )}
           
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[140px]">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -119,7 +136,7 @@ const ReservationList: React.FC<ReservationListProps> = ({
           </Select>
           
           <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-full sm:w-[150px]">
+            <SelectTrigger className="w-full sm:w-[140px]">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
@@ -128,6 +145,18 @@ const ReservationList: React.FC<ReservationListProps> = ({
               <SelectItem value="upcoming">Próximas</SelectItem>
               <SelectItem value="thisWeek">Esta Semana</SelectItem>
               <SelectItem value="past">Passadas</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date-desc">Mais Recentes</SelectItem>
+              <SelectItem value="date-asc">Mais Antigas</SelectItem>
+              <SelectItem value="name-asc">Nome A-Z</SelectItem>
+              <SelectItem value="name-desc">Nome Z-A</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -177,9 +206,16 @@ const ReservationList: React.FC<ReservationListProps> = ({
                         <span>{reservation.contact}</span>
                       </div>
                     </div>
+                    
+                    {reservation.status === 'cancelled' && reservation.cancellationReason && (
+                      <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded">
+                        <div className="text-sm text-destructive font-medium">Motivo do cancelamento:</div>
+                        <div className="text-sm text-muted-foreground">{reservation.cancellationReason}</div>
+                      </div>
+                    )}
                   </div>
                   
-                  {isAdmin && reservation.status === 'pending' && (
+                  {isAdmin && onStatusChange && reservation.status === 'pending' && (
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -191,7 +227,7 @@ const ReservationList: React.FC<ReservationListProps> = ({
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => onStatusChange(reservation.id, 'cancelled')}
+                        onClick={() => onStatusChange(reservation.id, 'cancelled', 'Reserva recusada pelo administrador')}
                       >
                         Recusar
                       </Button>
