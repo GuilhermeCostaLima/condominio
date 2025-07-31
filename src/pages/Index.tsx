@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import CondominiumLayout from '@/components/CondominiumLayout';
 import Dashboard from '@/components/Dashboard';
-import ReservationCalendar, { Reservation } from '@/components/ReservationCalendar';
+import ReservationCalendar from '@/components/ReservationCalendar';
 import ReservationForm from '@/components/ReservationForm';
 import ReservationList from '@/components/ReservationList';
 import AdminPanel from '@/components/AdminPanel';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Reservation } from '@/components/ReservationCalendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, MapPin, Users } from 'lucide-react';
+import { Construction } from 'lucide-react';
+import { UserTypeProvider, useUserType } from '@/components/UserTypeProvider';
 
-const Index = () => {
+const IndexContent = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([
@@ -21,7 +22,8 @@ const Index = () => {
       apartment: 'Apto 101',
       event: 'Aniversário da Maria',
       status: 'confirmed',
-      contact: '(11) 99999-9999'
+      contact: '(11) 99999-9999',
+      requestedAt: new Date().toISOString()
     },
     {
       id: '2',
@@ -31,7 +33,8 @@ const Index = () => {
       apartment: 'Apto 205',
       event: 'Reunião de família',
       status: 'pending',
-      contact: '(11) 88888-8888'
+      contact: '(11) 88888-8888',
+      requestedAt: new Date().toISOString()
     },
     {
       id: '3',
@@ -41,11 +44,13 @@ const Index = () => {
       apartment: 'Apto 312',
       event: 'Festa de formatura',
       status: 'confirmed',
-      contact: '(11) 77777-7777'
+      contact: '(11) 77777-7777',
+      requestedAt: new Date().toISOString()
     }
   ]);
+  const { userType, currentUser } = useUserType();
 
-  const handleNewReservation = (reservation: Omit<Reservation, 'id' | 'status'>) => {
+  const handleNewReservation = (reservation: Omit<Reservation, 'id'>) => {
     const newReservation: Reservation = {
       ...reservation,
       id: Date.now().toString(),
@@ -66,125 +71,120 @@ const Index = () => {
     );
   };
 
-  const handleDeleteReservation = (id: string) => {
-    setReservations(prev => prev.filter(reservation => reservation.id !== id));
-  };
-
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveSection} />;
-      
-      case 'reservations':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-3xl font-bold text-foreground mb-2">Sistema de Reservas</h2>
-              <p className="text-muted-foreground">Gerencie as reservas do salão de festas</p>
-            </div>
 
-            {/* Informações do Salão */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl text-center">Salão de Festas Premium</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
-                  <div className="flex flex-col items-center">
-                    <Users className="h-8 w-8 text-primary mb-2" />
-                    <h3 className="font-semibold">Capacidade</h3>
-                    <p className="text-sm text-muted-foreground">Até 80 pessoas</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <MapPin className="h-8 w-8 text-primary mb-2" />
-                    <h3 className="font-semibold">Localização</h3>
-                    <p className="text-sm text-muted-foreground">Térreo do Edifício</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <Clock className="h-8 w-8 text-primary mb-2" />
-                    <h3 className="font-semibold">Horários</h3>
-                    <p className="text-sm text-muted-foreground">8h às 23h</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <Calendar className="h-8 w-8 text-primary mb-2" />
-                    <h3 className="font-semibold">Disponibilidade</h3>
-                    <p className="text-sm text-muted-foreground">Todos os dias</p>
-                  </div>
+        case 'reservations':
+          if (userType === 'admin') {
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <ReservationCalendar
+                    reservations={reservations}
+                    onDateSelect={setSelectedDate}
+                    selectedDate={selectedDate}
+                  />
+                  <ReservationForm
+                    selectedDate={selectedDate}
+                    onReservationAdd={handleNewReservation}
+                    existingReservations={reservations}
+                  />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Tabs defaultValue="calendar" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="calendar">Calendário</TabsTrigger>
-                <TabsTrigger value="new-reservation">Nova Reserva</TabsTrigger>
-                <TabsTrigger value="my-reservations">Minhas Reservas</TabsTrigger>
-                <TabsTrigger value="admin">Administração</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="calendar">
-                <ReservationCalendar
-                  reservations={reservations}
-                  onDateSelect={setSelectedDate}
-                  selectedDate={selectedDate}
-                />
-              </TabsContent>
-
-              <TabsContent value="new-reservation">
-                <ReservationForm
-                  onReservationAdd={handleNewReservation}
-                  selectedDate={selectedDate}
-                  existingReservations={reservations}
-                />
-              </TabsContent>
-
-              <TabsContent value="my-reservations">
-                <ReservationList
-                  reservations={reservations}
-                  showUserReservationsOnly={true}
-                />
-              </TabsContent>
-
-              <TabsContent value="admin">
-                <AdminPanel
-                  reservations={reservations}
-                  onStatusChange={handleStatusChange}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-        );
+                <div>
+                  <AdminPanel
+                    reservations={reservations}
+                    onStatusChange={handleStatusChange}
+                  />
+                </div>
+              </div>
+            );
+          } else {
+            // Para moradores: apenas fazer reservas e ver suas próprias
+            const userReservations = reservations.filter(r => r.residentName === currentUser);
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <ReservationCalendar
+                    reservations={reservations}
+                    onDateSelect={setSelectedDate}
+                    selectedDate={selectedDate}
+                  />
+                  <ReservationForm
+                    selectedDate={selectedDate}
+                    onReservationAdd={handleNewReservation}
+                    existingReservations={reservations}
+                  />
+                </div>
+                <div>
+                  <ReservationList 
+                    reservations={userReservations}
+                    showUserReservationsOnly={true}
+                  />
+                </div>
+              </div>
+            );
+          }
       
       case 'residents':
         return (
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Moradores</h2>
-            <p className="text-muted-foreground">Em desenvolvimento...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Construction className="h-5 w-5 text-primary" />
+                Moradores
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
+            </CardContent>
+          </Card>
         );
       
       case 'documents':
         return (
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Documentos</h2>
-            <p className="text-muted-foreground">Em desenvolvimento...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Construction className="h-5 w-5 text-primary" />
+                Documentos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
+            </CardContent>
+          </Card>
         );
       
       case 'notices':
         return (
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Avisos</h2>
-            <p className="text-muted-foreground">Em desenvolvimento...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Construction className="h-5 w-5 text-primary" />
+                Avisos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
+            </CardContent>
+          </Card>
         );
       
       case 'settings':
         return (
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Configurações</h2>
-            <p className="text-muted-foreground">Em desenvolvimento...</p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Construction className="h-5 w-5 text-primary" />
+                Configurações
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
+            </CardContent>
+          </Card>
         );
       
       default:
@@ -199,6 +199,14 @@ const Index = () => {
     >
       {renderContent()}
     </CondominiumLayout>
+  );
+};
+
+const Index = () => {
+  return (
+    <UserTypeProvider>
+      <IndexContent />
+    </UserTypeProvider>
   );
 };
 

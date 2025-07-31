@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Home, 
   Calendar, 
@@ -13,8 +14,13 @@ import {
   X,
   Building,
   Phone,
-  MapPin
+  MapPin,
+  Shield,
+  User
 } from 'lucide-react';
+import { useUserType } from './UserTypeProvider';
+
+type UserType = 'resident' | 'admin';
 
 interface CondominiumLayoutProps {
   children: React.ReactNode;
@@ -28,15 +34,25 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({
   onSectionChange
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { userType, setUserType, currentUser, setCurrentUser } = useUserType();
 
-  const menuItems = [
+  const residentItems = [
     { id: 'dashboard', label: 'Início', icon: Home },
+    { id: 'reservations', label: 'Reservas', icon: Calendar },
+    { id: 'documents', label: 'Documentos', icon: FileText },
+    { id: 'notices', label: 'Avisos', icon: Bell },
+  ];
+
+  const adminItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'reservations', label: 'Reservas', icon: Calendar },
     { id: 'residents', label: 'Moradores', icon: Users },
     { id: 'documents', label: 'Documentos', icon: FileText },
     { id: 'notices', label: 'Avisos', icon: Bell },
     { id: 'settings', label: 'Configurações', icon: Settings },
   ];
+
+  const menuItems = userType === 'admin' ? adminItems : residentItems;
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,6 +78,32 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4" />
                 <span>(11) 9999-9999</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Select value={userType} onValueChange={(value: UserType) => setUserType(value)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="resident">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Morador
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="admin">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Badge variant="outline" className="text-xs">
+                  {currentUser}
+                </Badge>
               </div>
             </div>
 

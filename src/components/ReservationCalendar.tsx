@@ -13,7 +13,9 @@ export interface Reservation {
   event: string;
   status: 'confirmed' | 'pending' | 'cancelled';
   contact: string;
+  observations?: string;
   cancellationReason?: string;
+  requestedAt: string;
 }
 
 interface ReservationCalendarProps {

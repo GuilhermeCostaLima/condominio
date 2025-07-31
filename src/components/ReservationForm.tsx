@@ -16,10 +16,15 @@ interface ReservationFormProps {
 }
 
 const timeSlots = [
-  '08:00 - 12:00',
-  '12:00 - 16:00',
-  '16:00 - 20:00',
-  '20:00 - 00:00'
+  '08:00 - 10:00',
+  '10:00 - 12:00',
+  '12:00 - 14:00',
+  '14:00 - 16:00',
+  '16:00 - 18:00',
+  '18:00 - 20:00',
+  '20:00 - 22:00',
+  '22:00 - 00:00',
+  'Dia Inteiro (08:00 - 00:00)'
 ];
 
 const ReservationForm: React.FC<ReservationFormProps> = ({
@@ -77,7 +82,9 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
       apartment: formData.apartment,
       event: formData.event,
       contact: formData.contact,
-      status: 'pending'
+      observations: formData.observations,
+      status: 'pending',
+      requestedAt: new Date().toISOString()
     };
 
     onReservationAdd(newReservation);

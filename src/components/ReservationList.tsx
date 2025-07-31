@@ -207,6 +207,18 @@ const ReservationList: React.FC<ReservationListProps> = ({
                       </div>
                     </div>
                     
+                    {reservation.requestedAt && (
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Solicitado em: {new Date(reservation.requestedAt).toLocaleString('pt-BR')}
+                      </div>
+                    )}
+                    
+                    {reservation.observations && (
+                      <div className="mt-2 p-2 bg-muted/50 rounded text-sm">
+                        <span className="font-medium">Observações:</span> {reservation.observations}
+                      </div>
+                    )}
+                    
                     {reservation.status === 'cancelled' && reservation.cancellationReason && (
                       <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded">
                         <div className="text-sm text-destructive font-medium">Motivo do cancelamento:</div>
