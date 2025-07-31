@@ -1,57 +1,57 @@
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Calendar, Users, Settings } from 'lucide-react';
+import CondominiumLayout from '@/components/CondominiumLayout';
+import Dashboard from '@/components/Dashboard';
 import ReservationCalendar, { Reservation } from '@/components/ReservationCalendar';
 import ReservationForm from '@/components/ReservationForm';
 import ReservationList from '@/components/ReservationList';
 import AdminPanel from '@/components/AdminPanel';
-import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, Clock, MapPin, Users } from 'lucide-react';
 
 const Index = () => {
-  const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const [reservations, setReservations] = useState<Reservation[]>([
     {
       id: '1',
-      date: '2024-01-25',
-      timeSlot: '16:00 - 20:00',
-      residentName: 'João Silva',
-      apartment: '101',
-      event: 'Aniversário de 30 anos',
+      date: '2024-01-15',
+      timeSlot: '19:00-23:00',
+      residentName: 'Maria Silva',
+      apartment: 'Apto 101',
+      event: 'Aniversário da Maria',
       status: 'confirmed',
       contact: '(11) 99999-9999'
     },
     {
       id: '2',
-      date: '2024-01-28',
-      timeSlot: '20:00 - 00:00',
-      residentName: 'Maria Santos',
-      apartment: '205',
+      date: '2024-01-16',
+      timeSlot: '14:00-18:00',
+      residentName: 'João Santos',
+      apartment: 'Apto 205',
       event: 'Reunião de família',
       status: 'pending',
       contact: '(11) 88888-8888'
     },
     {
       id: '3',
-      date: '2024-02-05',
-      timeSlot: '12:00 - 16:00',
-      residentName: 'Carlos Oliveira',
-      apartment: '304',
-      event: 'Confraternização',
+      date: '2024-01-17',
+      timeSlot: '20:00-00:00',
+      residentName: 'Ana Costa',
+      apartment: 'Apto 312',
+      event: 'Festa de formatura',
       status: 'confirmed',
       contact: '(11) 77777-7777'
     }
   ]);
 
-  const handleReservationAdd = (newReservation: Omit<Reservation, 'id'>) => {
-    const reservation: Reservation = {
-      ...newReservation,
-      id: Date.now().toString()
+  const handleNewReservation = (reservation: Omit<Reservation, 'id' | 'status'>) => {
+    const newReservation: Reservation = {
+      ...reservation,
+      id: Date.now().toString(),
+      status: 'pending'
     };
-    setReservations(prev => [...prev, reservation]);
+    setReservations(prev => [...prev, newReservation]);
   };
 
   const handleStatusChange = (id: string, status: Reservation['status'], reason?: string) => {
@@ -64,156 +64,141 @@ const Index = () => {
         } : reservation
       )
     );
-    
-    const statusText = status === 'confirmed' ? 'aprovada' : 'cancelada';
-    toast({
-      title: "Status Atualizado",
-      description: `Reserva ${statusText} com sucesso.`,
-    });
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Building2 className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Sistema de Reservas</h1>
-                <p className="text-sm text-muted-foreground">Salão de Festas - Condomínio</p>
-              </div>
+  const handleDeleteReservation = (id: string) => {
+    setReservations(prev => prev.filter(reservation => reservation.id !== id));
+  };
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case 'dashboard':
+        return <Dashboard onNavigate={setActiveSection} />;
+      
+      case 'reservations':
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-3xl font-bold text-foreground mb-2">Sistema de Reservas</h2>
+              <p className="text-muted-foreground">Gerencie as reservas do salão de festas</p>
             </div>
-            <Button
-              variant={isAdminMode ? "default" : "outline"}
-              onClick={() => setIsAdminMode(!isAdminMode)}
-              className="flex items-center gap-2"
-            >
-              <Settings className="h-4 w-4" />
-              {isAdminMode ? 'Sair do Admin' : 'Modo Admin'}
-            </Button>
-          </div>
-        </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {isAdminMode ? (
-          <AdminPanel
-            reservations={reservations}
-            onStatusChange={handleStatusChange}
-          />
-        ) : (
-          <Tabs defaultValue="calendar" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="calendar" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Calendário
-              </TabsTrigger>
-              <TabsTrigger value="reservations" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Minhas Reservas
-              </TabsTrigger>
-              <TabsTrigger value="info" className="flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Informações
-              </TabsTrigger>
-            </TabsList>
+            {/* Informações do Salão */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl text-center">Salão de Festas Premium</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+                  <div className="flex flex-col items-center">
+                    <Users className="h-8 w-8 text-primary mb-2" />
+                    <h3 className="font-semibold">Capacidade</h3>
+                    <p className="text-sm text-muted-foreground">Até 80 pessoas</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <MapPin className="h-8 w-8 text-primary mb-2" />
+                    <h3 className="font-semibold">Localização</h3>
+                    <p className="text-sm text-muted-foreground">Térreo do Edifício</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Clock className="h-8 w-8 text-primary mb-2" />
+                    <h3 className="font-semibold">Horários</h3>
+                    <p className="text-sm text-muted-foreground">8h às 23h</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <Calendar className="h-8 w-8 text-primary mb-2" />
+                    <h3 className="font-semibold">Disponibilidade</h3>
+                    <p className="text-sm text-muted-foreground">Todos os dias</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <TabsContent value="calendar" className="space-y-6 mt-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Tabs defaultValue="calendar" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="calendar">Calendário</TabsTrigger>
+                <TabsTrigger value="new-reservation">Nova Reserva</TabsTrigger>
+                <TabsTrigger value="my-reservations">Minhas Reservas</TabsTrigger>
+                <TabsTrigger value="admin">Administração</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="calendar">
                 <ReservationCalendar
                   reservations={reservations}
                   onDateSelect={setSelectedDate}
                   selectedDate={selectedDate}
                 />
+              </TabsContent>
+
+              <TabsContent value="new-reservation">
                 <ReservationForm
+                  onReservationAdd={handleNewReservation}
                   selectedDate={selectedDate}
-                  onReservationAdd={handleReservationAdd}
                   existingReservations={reservations}
                 />
-              </div>
-            </TabsContent>
+              </TabsContent>
 
-            <TabsContent value="reservations" className="mt-6">
-              <ReservationList
-                reservations={reservations}
-                showUserReservationsOnly={true}
-              />
-            </TabsContent>
+              <TabsContent value="my-reservations">
+                <ReservationList
+                  reservations={reservations}
+                  showUserReservationsOnly={true}
+                />
+              </TabsContent>
 
-            <TabsContent value="info" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      Informações do Salão
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Capacidade</h4>
-                      <p className="text-muted-foreground">Até 80 pessoas</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Equipamentos Inclusos</h4>
-                      <ul className="text-muted-foreground space-y-1">
-                        <li>• Sistema de som</li>
-                        <li>• Mesas e cadeiras</li>
-                        <li>• Cozinha equipada</li>
-                        <li>• Ar condicionado</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Horários Disponíveis</h4>
-                      <ul className="text-muted-foreground space-y-1">
-                        <li>• Manhã: 08:00 - 12:00</li>
-                        <li>• Tarde: 12:00 - 16:00</li>
-                        <li>• Final da tarde: 16:00 - 20:00</li>
-                        <li>• Noite: 20:00 - 00:00</li>
-                      </ul>
-                    </div>
-                  </CardContent>
-                </Card>
+              <TabsContent value="admin">
+                <AdminPanel
+                  reservations={reservations}
+                  onStatusChange={handleStatusChange}
+                />
+              </TabsContent>
+            </Tabs>
+          </div>
+        );
+      
+      case 'residents':
+        return (
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Moradores</h2>
+            <p className="text-muted-foreground">Em desenvolvimento...</p>
+          </div>
+        );
+      
+      case 'documents':
+        return (
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Documentos</h2>
+            <p className="text-muted-foreground">Em desenvolvimento...</p>
+          </div>
+        );
+      
+      case 'notices':
+        return (
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Avisos</h2>
+            <p className="text-muted-foreground">Em desenvolvimento...</p>
+          </div>
+        );
+      
+      case 'settings':
+        return (
+          <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Configurações</h2>
+            <p className="text-muted-foreground">Em desenvolvimento...</p>
+          </div>
+        );
+      
+      default:
+        return <Dashboard onNavigate={setActiveSection} />;
+    }
+  };
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Regras de Uso</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Reservas</h4>
-                      <ul className="text-muted-foreground space-y-1">
-                        <li>• Antecedência mínima: 7 dias</li>
-                        <li>• Máximo 1 reserva por mês por apartamento</li>
-                        <li>• Confirmação em até 48 horas</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Condições</h4>
-                      <ul className="text-muted-foreground space-y-1">
-                        <li>• Limpeza obrigatória após o uso</li>
-                        <li>• Não é permitido som alto após 22h</li>
-                        <li>• Responsabilidade por danos</li>
-                        <li>• Taxa de limpeza: R$ 100,00</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-medium mb-2">Contato</h4>
-                      <p className="text-muted-foreground">
-                        Administração: (11) 3333-3333<br />
-                        WhatsApp: (11) 99999-0000
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
-      </main>
-    </div>
+  return (
+    <CondominiumLayout
+      activeSection={activeSection}
+      onSectionChange={setActiveSection}
+    >
+      {renderContent()}
+    </CondominiumLayout>
   );
 };
 
