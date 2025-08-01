@@ -3,20 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
-
-export interface Reservation {
-  id: string;
-  date: string;
-  timeSlot: string;
-  residentName: string;
-  apartment: string;
-  event: string;
-  status: 'confirmed' | 'pending' | 'cancelled';
-  contact: string;
-  observations?: string;
-  cancellationReason?: string;
-  requestedAt: string;
-}
+import { Reservation } from '@/types/supabase';
 
 interface ReservationCalendarProps {
   reservations: Reservation[];
@@ -49,120 +36,155 @@ const ReservationCalendar: React.FC<ReservationCalendarProps> = ({
     return reservations.filter(r => r.date === dateStr && r.status !== 'cancelled');
   };
 
-  const getDayStatus = (date: Date) => {
-    const dateReservations = getDateReservations(date);
-    if (dateReservations.length === 0) return 'available';
-    if (dateReservations.some(r => r.status === 'confirmed')) return 'booked';
-    return 'pending';
-  };
-
   const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + (direction === 'next' ? 1 : -1), 1));
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
   };
 
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
+  const monthNames = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
 
-  const isCurrentMonth = (date: Date) => {
-    return date.getMonth() === currentDate.getMonth();
-  };
+  const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            Calendário de Reservas
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('prev')}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="min-w-[120px] text-center font-medium">
-              {currentDate.toLocaleDateString('pt-BR', { 
-                month: 'long', 
-                year: 'numeric' 
-              })}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateMonth('next')}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        
-        <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-available"></div>
-            <span>Disponível</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-pending"></div>
-            <span>Pendente</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-booked"></div>
-            <span>Reservado</span>
-          </div>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardTitle className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          Calendário de Reservas
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('prev')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-medium min-w-[120px] text-center">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('next')}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
-      
       <CardContent>
         <div className="grid grid-cols-7 gap-1 mb-4">
-          {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+          {dayNames.map(day => (
             <div key={day} className="p-2 text-center text-sm font-medium text-muted-foreground">
               {day}
             </div>
           ))}
         </div>
-        
         <div className="grid grid-cols-7 gap-1">
-          {days.map((date, index) => {
-            const status = getDayStatus(date);
-            const dateStr = date.toISOString().split('T')[0];
-            const reservationsCount = getDateReservations(date).length;
+          {days.map((day, index) => {
+            const isCurrentMonth = day.getMonth() === currentDate.getMonth();
+            const isToday = day.toDateString() === new Date().toDateString();
+            const dateStr = day.toISOString().split('T')[0];
             const isSelected = selectedDate === dateStr;
-            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
-            
+            const dayReservations = getDateReservations(day);
+            const isPast = day < new Date(new Date().toDateString());
+
             return (
               <Button
                 key={index}
-                variant="ghost"
+                variant={isSelected ? "default" : "ghost"}
                 className={`
-                  h-12 p-1 relative flex flex-col items-center justify-center text-xs
-                  ${!isCurrentMonth(date) ? 'text-muted-foreground opacity-40' : ''}
-                  ${isToday(date) ? 'bg-accent' : ''}
-                  ${isSelected ? 'bg-primary text-primary-foreground' : ''}
-                  ${isPast ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent'}
+                  h-12 p-1 flex flex-col items-center justify-center relative
+                  ${!isCurrentMonth ? 'text-muted-foreground opacity-50' : ''}
+                  ${isToday ? 'ring-2 ring-primary ring-offset-2' : ''}
+                  ${isPast ? 'opacity-60' : ''}
                 `}
-                onClick={() => !isPast && onDateSelect(dateStr)}
+                onClick={() => onDateSelect(dateStr)}
                 disabled={isPast}
               >
-                <span className={isToday(date) ? 'font-bold' : ''}>{date.getDate()}</span>
-                {reservationsCount > 0 && (
-                  <div 
-                    className={`
-                      w-2 h-2 rounded-full mt-0.5
-                      ${status === 'available' ? 'bg-available' : ''}
-                      ${status === 'pending' ? 'bg-pending' : ''}
-                      ${status === 'booked' ? 'bg-booked' : ''}
-                    `}
-                  />
+                <span className="text-sm">{day.getDate()}</span>
+                {dayReservations.length > 0 && (
+                  <div className="flex gap-1 mt-1">
+                    {dayReservations.slice(0, 2).map((reservation, idx) => (
+                      <div
+                        key={idx}
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          reservation.status === 'confirmed' 
+                            ? 'bg-green-500' 
+                            : reservation.status === 'pending'
+                            ? 'bg-yellow-500'
+                            : 'bg-red-500'
+                        }`}
+                      />
+                    ))}
+                    {dayReservations.length > 2 && (
+                      <span className="text-xs">+</span>
+                    )}
+                  </div>
                 )}
               </Button>
             );
           })}
         </div>
+        
+        <div className="mt-4 space-y-2">
+          <h4 className="text-sm font-medium">Legenda:</h4>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <span>Confirmada</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <span>Pendente</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <span>Cancelada</span>
+            </div>
+          </div>
+        </div>
+
+        {selectedDate && (
+          <div className="mt-4 p-3 bg-muted rounded-lg">
+            <h4 className="text-sm font-medium mb-2">
+              Reservas para {new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}:
+            </h4>
+            {getDateReservations(new Date(selectedDate + 'T00:00:00')).length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhuma reserva para este dia</p>
+            ) : (
+              <div className="space-y-2">
+                {getDateReservations(new Date(selectedDate + 'T00:00:00')).map(reservation => (
+                  <div key={reservation.id} className="flex items-center justify-between p-2 bg-background rounded">
+                    <div>
+                      <span className="text-sm font-medium">{reservation.time_slot}</span>
+                      <span className="text-sm text-muted-foreground ml-2">{reservation.event}</span>
+                    </div>
+                    <Badge 
+                      variant={
+                        reservation.status === 'confirmed' ? 'default' :
+                        reservation.status === 'pending' ? 'secondary' : 'destructive'
+                      }
+                    >
+                      {reservation.status === 'confirmed' ? 'Confirmada' :
+                       reservation.status === 'pending' ? 'Pendente' : 'Cancelada'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

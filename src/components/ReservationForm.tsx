@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { CalendarPlus, User, Building, Clock, Phone, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Reservation } from './ReservationCalendar';
+import { Reservation } from '@/types/supabase';
 
 interface ReservationFormProps {
   selectedDate: string | null;

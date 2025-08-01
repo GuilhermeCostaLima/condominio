@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Settings, Users, Calendar, BarChart3, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { Reservation } from './ReservationCalendar';
+import { Reservation } from '@/types/supabase';
 import CancelReservationDialog from './CancelReservationDialog';
 
 interface AdminPanelProps {

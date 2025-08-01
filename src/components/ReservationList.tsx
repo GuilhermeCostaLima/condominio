@@ -5,20 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, User, Building, Phone, FileText, Search, Filter } from 'lucide-react';
-import { Reservation } from './ReservationCalendar';
+import { Reservation } from '@/types/supabase';
 
 interface ReservationListProps {
   reservations: Reservation[];
   onStatusChange?: (id: string, status: Reservation['status'], reason?: string) => void;
   isAdmin?: boolean;
   showUserReservationsOnly?: boolean;
+  loading?: boolean;
 }
 
-const ReservationList: React.FC<ReservationListProps> = ({
-  reservations,
-  onStatusChange,
+const ReservationList: React.FC<ReservationListProps> = ({ 
+  reservations, 
+  onStatusChange, 
   isAdmin = false,
-  showUserReservationsOnly = false
+  showUserReservationsOnly = false,
+  loading = false 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');

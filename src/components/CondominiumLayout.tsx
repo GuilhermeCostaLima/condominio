@@ -1,26 +1,25 @@
 import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Home, 
-  Calendar, 
-  Users, 
-  FileText, 
-  Bell, 
+import {
+  Building2,
+  Calendar,
+  Users,
+  FileText,
+  Bell,
   Settings,
   Menu,
   X,
-  Building,
   Phone,
+  Mail,
   MapPin,
   Shield,
-  User
+  User,
+  LogOut,
+  Home
 } from 'lucide-react';
-import { useUserType } from './UserTypeProvider';
-
-type UserType = 'resident' | 'admin';
 
 interface CondominiumLayoutProps {
   children: React.ReactNode;
@@ -28,13 +27,13 @@ interface CondominiumLayoutProps {
   onSectionChange: (section: string) => void;
 }
 
-const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({
-  children,
-  activeSection,
-  onSectionChange
-}) => {
+const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({ children, activeSection, onSectionChange }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { userType, setUserType, currentUser, setCurrentUser } = useUserType();
+  const { profile, signOut } = useAuth();
+  
+  const userType = profile?.role || 'resident';
+  const currentUser = profile?.display_name || '';
+  const apartmentNumber = profile?.apartment_number;
 
   const residentItems = [
     { id: 'dashboard', label: 'Início', icon: Home },
@@ -61,12 +60,12 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              <Building className="h-8 w-8 text-primary" />
+              <Building2 className="h-8 w-8 text-primary" />
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  Residencial Costa Esmeralda
+                  Condomínio Solar
                 </h1>
-                <p className="text-sm text-muted-foreground">Sistema de Gestão</p>
+                <p className="text-sm text-muted-foreground">Sistema de Reservas</p>
               </div>
             </div>
             
@@ -80,30 +79,21 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({
                 <span>(11) 9999-9999</span>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Select value={userType} onValueChange={(value: UserType) => setUserType(value)}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="resident">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Morador
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Admin
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Badge variant="outline" className="text-xs">
-                  {currentUser}
-                </Badge>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="text-sm font-medium">{currentUser}</span>
+                  {apartmentNumber && (
+                    <Badge variant="outline">Apt {apartmentNumber}</Badge>
+                  )}
+                  <Badge variant={userType === 'admin' ? 'default' : 'secondary'}>
+                    {userType === 'admin' ? 'Administrador' : 'Morador'}
+                  </Badge>
+                </div>
+                <Button variant="outline" size="sm" onClick={signOut}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </Button>
               </div>
             </div>
 
@@ -159,12 +149,12 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Total de Unidades</span>
-                  <Badge variant="secondary">120</Badge>
+                  <span className="text-sm text-muted-foreground">Total de Apartamentos</span>
+                  <Badge variant="secondary">16</Badge>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Reservas Hoje</span>
-                  <Badge variant="default">3</Badge>
+                  <span className="text-sm text-muted-foreground">Reservas Pendentes</span>
+                  <Badge variant="default">2</Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Status</span>
