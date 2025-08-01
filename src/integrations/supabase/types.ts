@@ -14,16 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          apartment_number: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apartment_number?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apartment_number?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reservations: {
+        Row: {
+          apartment_number: string
+          cancellation_reason: string | null
+          contact: string
+          created_at: string
+          date: string
+          event: string
+          id: string
+          observations: string | null
+          requested_at: string
+          resident_name: string
+          status: string
+          time_slot: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          apartment_number: string
+          cancellation_reason?: string | null
+          contact: string
+          created_at?: string
+          date: string
+          event: string
+          id?: string
+          observations?: string | null
+          requested_at?: string
+          resident_name: string
+          status?: string
+          time_slot: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          apartment_number?: string
+          cancellation_reason?: string | null
+          contact?: string
+          created_at?: string
+          date?: string
+          event?: string
+          id?: string
+          observations?: string | null
+          requested_at?: string
+          resident_name?: string
+          status?: string
+          time_slot?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { user_uuid: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "resident"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +233,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "resident"],
+    },
   },
 } as const
