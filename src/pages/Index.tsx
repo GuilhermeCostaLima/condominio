@@ -193,9 +193,9 @@ const IndexContent = () => {
               <div>
                 <ReservationList 
                   reservations={reservations} 
-                  onStatusChange={userType === 'admin' ? handleStatusChange : undefined}
-                  isAdmin={userType === 'admin'}
-                  showUserReservationsOnly={userType === 'resident'}
+                  onStatusChange={profile?.role === 'admin' ? handleStatusChange : undefined}
+                  isAdmin={profile?.role === 'admin'}
+                  showUserReservationsOnly={profile?.role === 'resident'}
                   loading={loading}
                 />
               </div>

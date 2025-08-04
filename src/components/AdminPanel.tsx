@@ -154,14 +154,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <Badge variant="outline" className="text-warning border-warning">
                               Aguardando Aprovação
                             </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {formatDate(reservation.date)} • {reservation.timeSlot}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                            <div><strong>Morador:</strong> {reservation.residentName}</div>
-                            <div><strong>Apartamento:</strong> {reservation.apartment}</div>
+                             <span className="text-sm text-muted-foreground">
+                               {formatDate(reservation.date)} • {reservation.time_slot}
+                             </span>
+                           </div>
+                           
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                             <div><strong>Morador:</strong> {reservation.resident_name}</div>
+                             <div><strong>Apartamento:</strong> {reservation.apartment_number}</div>
                             <div><strong>Evento:</strong> {reservation.event}</div>
                             <div><strong>Contato:</strong> {reservation.contact}</div>
                           </div>
@@ -218,14 +218,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <Badge className="bg-success text-success-foreground">
                               Confirmada
                             </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {formatDate(reservation.date)} • {reservation.timeSlot}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                            <div><strong>Morador:</strong> {reservation.residentName}</div>
-                            <div><strong>Apartamento:</strong> {reservation.apartment}</div>
+                             <span className="text-sm text-muted-foreground">
+                               {formatDate(reservation.date)} • {reservation.time_slot}
+                             </span>
+                           </div>
+                           
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                             <div><strong>Morador:</strong> {reservation.resident_name}</div>
+                             <div><strong>Apartamento:</strong> {reservation.apartment_number}</div>
                             <div><strong>Evento:</strong> {reservation.event}</div>
                             <div><strong>Contato:</strong> {reservation.contact}</div>
                           </div>
@@ -252,12 +252,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
         isOpen={cancelDialog.isOpen}
         onClose={() => setCancelDialog({ isOpen: false, reservation: null })}
         onConfirm={handleCancelConfirm}
-        reservationDetails={cancelDialog.reservation ? {
-          residentName: cancelDialog.reservation.residentName,
-          date: cancelDialog.reservation.date,
-          timeSlot: cancelDialog.reservation.timeSlot,
-          event: cancelDialog.reservation.event
-        } : {
+         reservationDetails={cancelDialog.reservation ? {
+           residentName: cancelDialog.reservation.resident_name,
+           date: cancelDialog.reservation.date,
+           timeSlot: cancelDialog.reservation.time_slot,
+           event: cancelDialog.reservation.event
+         } : {
           residentName: '',
           date: '',
           timeSlot: '',

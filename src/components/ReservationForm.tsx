@@ -50,7 +50,7 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     );
     
     return timeSlots.filter(slot => 
-      !dateReservations.some(r => r.timeSlot === slot)
+      !dateReservations.some(r => r.time_slot === slot)
     );
   };
 
@@ -76,15 +76,19 @@ const ReservationForm: React.FC<ReservationFormProps> = ({
     }
 
     const newReservation: Omit<Reservation, 'id'> = {
+      user_id: '', // This will be set by the parent component
       date: selectedDate,
-      timeSlot: formData.timeSlot,
-      residentName: formData.residentName,
-      apartment: formData.apartment,
+      time_slot: formData.timeSlot,
+      resident_name: formData.residentName,
+      apartment_number: formData.apartment,
       event: formData.event,
       contact: formData.contact,
       observations: formData.observations,
       status: 'pending',
-      requestedAt: new Date().toISOString()
+      cancellation_reason: null,
+      requested_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     onReservationAdd(newReservation);

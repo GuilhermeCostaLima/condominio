@@ -59,8 +59,8 @@ const ReservationList: React.FC<ReservationListProps> = ({
 
   const filteredReservations = reservations.filter(reservation => {
     const matchesSearch = 
-      reservation.residentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reservation.apartment.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reservation.resident_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      reservation.apartment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       reservation.event.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
@@ -92,9 +92,9 @@ const ReservationList: React.FC<ReservationListProps> = ({
       case 'date-desc':
         return dateB.getTime() - dateA.getTime();
       case 'name-asc':
-        return a.residentName.localeCompare(b.residentName);
+        return a.resident_name.localeCompare(b.resident_name);
       case 'name-desc':
-        return b.residentName.localeCompare(a.residentName);
+        return b.resident_name.localeCompare(a.resident_name);
       default:
         return dateB.getTime() - dateA.getTime();
     }
@@ -184,21 +184,21 @@ const ReservationList: React.FC<ReservationListProps> = ({
                         <Calendar className="h-4 w-4" />
                         {formatDate(reservation.date)}
                       </span>
-                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {reservation.timeSlot}
-                      </span>
+                       <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                         <Clock className="h-4 w-4" />
+                         {reservation.time_slot}
+                       </span>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium">{reservation.residentName}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <span>Apto {reservation.apartment}</span>
-                      </div>
+                       <div className="flex items-center gap-2">
+                         <User className="h-4 w-4 text-muted-foreground" />
+                         <span className="font-medium">{reservation.resident_name}</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <Building className="h-4 w-4 text-muted-foreground" />
+                         <span>Apto {reservation.apartment_number}</span>
+                       </div>
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-muted-foreground" />
                         <span>{reservation.event}</span>
@@ -209,11 +209,11 @@ const ReservationList: React.FC<ReservationListProps> = ({
                       </div>
                     </div>
                     
-                    {reservation.requestedAt && (
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Solicitado em: {new Date(reservation.requestedAt).toLocaleString('pt-BR')}
-                      </div>
-                    )}
+                     {reservation.requested_at && (
+                       <div className="mt-2 text-xs text-muted-foreground">
+                         Solicitado em: {new Date(reservation.requested_at).toLocaleString('pt-BR')}
+                       </div>
+                     )}
                     
                     {reservation.observations && (
                       <div className="mt-2 p-2 bg-muted/50 rounded text-sm">
@@ -221,12 +221,12 @@ const ReservationList: React.FC<ReservationListProps> = ({
                       </div>
                     )}
                     
-                    {reservation.status === 'cancelled' && reservation.cancellationReason && (
-                      <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded">
-                        <div className="text-sm text-destructive font-medium">Motivo do cancelamento:</div>
-                        <div className="text-sm text-muted-foreground">{reservation.cancellationReason}</div>
-                      </div>
-                    )}
+                     {reservation.status === 'cancelled' && reservation.cancellation_reason && (
+                       <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded">
+                         <div className="text-sm text-destructive font-medium">Motivo do cancelamento:</div>
+                         <div className="text-sm text-muted-foreground">{reservation.cancellation_reason}</div>
+                       </div>
+                     )}
                   </div>
                   
                   {isAdmin && onStatusChange && reservation.status === 'pending' && (
