@@ -7,6 +7,10 @@ import ReservationForm from '@/components/ReservationForm';
 import ReservationList from '@/components/ReservationList';
 import AdminPanel from '@/components/AdminPanel';
 import Dashboard from '@/components/Dashboard';
+import ResidentsManagement from '@/components/ResidentsManagement';
+import DocumentsManagement from '@/components/DocumentsManagement';
+import NoticesManagement from '@/components/NoticesManagement';
+import SettingsManagement from '@/components/SettingsManagement';
 import PrivateRoute from '@/components/PrivateRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Construction } from 'lucide-react';
@@ -204,64 +208,16 @@ const IndexContent = () => {
         }
       
       case 'residents':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Construction className="h-5 w-5 text-primary" />
-                Moradores
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-            </CardContent>
-          </Card>
-        );
+        return <ResidentsManagement />;
       
       case 'documents':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Construction className="h-5 w-5 text-primary" />
-                Documentos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-            </CardContent>
-          </Card>
-        );
+        return <DocumentsManagement />;
       
       case 'notices':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Construction className="h-5 w-5 text-primary" />
-                Avisos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-            </CardContent>
-          </Card>
-        );
+        return <NoticesManagement />;
       
       case 'settings':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Construction className="h-5 w-5 text-primary" />
-                Configurações
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-            </CardContent>
-          </Card>
-        );
+        return <SettingsManagement />;
       
       default:
         return <Dashboard onNavigate={setActiveSection} />;

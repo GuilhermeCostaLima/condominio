@@ -165,6 +165,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                             <div><strong>Evento:</strong> {reservation.event}</div>
                             <div><strong>Contato:</strong> {reservation.contact}</div>
                           </div>
+                          
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Solicitado em: {new Date(reservation.requested_at).toLocaleString('pt-BR')}
+                          </div>
                         </div>
                         
                         <div className="flex gap-2">
@@ -228,6 +232,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                              <div><strong>Apartamento:</strong> {reservation.apartment_number}</div>
                             <div><strong>Evento:</strong> {reservation.event}</div>
                             <div><strong>Contato:</strong> {reservation.contact}</div>
+                          </div>
+                          
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            Solicitado em: {new Date(reservation.requested_at).toLocaleString('pt-BR')}
                           </div>
                         </div>
                         
