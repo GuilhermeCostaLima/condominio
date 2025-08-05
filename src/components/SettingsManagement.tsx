@@ -14,7 +14,7 @@ const SettingsManagement: React.FC = () => {
   const { toast } = useToast();
   
   const [condominiumSettings, setCondominiumSettings] = useState({
-    name: 'Residencial Sonho Dourado',
+    name: 'Residencial Costa Esmeralda',
     address: 'Rua das Flores, 123',
     city: 'São Paulo',
     zipCode: '01234-567',

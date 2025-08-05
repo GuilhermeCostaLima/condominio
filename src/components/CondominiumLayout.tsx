@@ -63,7 +63,7 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({ children, activeS
               <Building2 className="h-8 w-8 text-primary" />
               <div>
                 <h1 className="text-xl font-bold text-foreground">
-                  Condomínio Solar
+                  Residencial Costa Esmeralda
                 </h1>
                 <p className="text-sm text-muted-foreground">Sistema de Reservas</p>
               </div>

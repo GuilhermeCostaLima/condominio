@@ -124,7 +124,7 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Building2 className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-2xl">Condomínio Solar</CardTitle>
+          <CardTitle className="text-2xl">Residencial Costa Esmeralda</CardTitle>
           <CardDescription>Sistema de Reservas</CardDescription>
         </CardHeader>
         <CardContent>
