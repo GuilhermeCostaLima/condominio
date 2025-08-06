@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,50 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Bell, Search, Filter, Plus, Calendar, AlertTriangle, Info, CheckCircle } from 'lucide-react';
-
-interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  type: 'info' | 'warning' | 'urgent' | 'maintenance';
-  isActive: boolean;
-  publishedAt: string;
-  publishedBy: string;
-  expiresAt?: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { Notice } from '@/types/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const NoticesManagement: React.FC = () => {
-  const [notices] = useState<Notice[]>([
-    {
-      id: '1',
-      title: 'Manutenção no Elevador',
-      content: 'O elevador social passará por manutenção preventiva na próxima sexta-feira das 8h às 17h.',
-      type: 'maintenance',
-      isActive: true,
-      publishedAt: '2024-01-15T08:00:00Z',
-      publishedBy: 'Síndico',
-      expiresAt: '2024-01-26T23:59:59Z'
-    },
-    {
-      id: '2',
-      title: 'Nova Política de Uso da Piscina',
-      content: 'Informamos sobre as novas regras de uso da área de lazer. Consulte o regulamento atualizado.',
-      type: 'info',
-      isActive: true,
-      publishedAt: '2024-01-10T10:00:00Z',
-      publishedBy: 'Administração'
-    },
-    {
-      id: '3',
-      title: 'URGENTE: Problema no Sistema de Água',
-      content: 'Devido a um problema técnico, o fornecimento de água será interrompido hoje das 14h às 18h.',
-      type: 'urgent',
-      isActive: false,
-      publishedAt: '2024-01-08T12:00:00Z',
-      publishedBy: 'Síndico',
-      expiresAt: '2024-01-08T23:59:59Z'
-    }
-  ]);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -62,24 +26,51 @@ const NoticesManagement: React.FC = () => {
   const [newNotice, setNewNotice] = useState({
     title: '',
     content: '',
-    type: 'info' as Notice['type'],
+    category: 'general',
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
     isActive: true,
     expiresAt: ''
   });
 
-  const getTypeBadge = (type: Notice['type']) => {
-    const typeConfig = {
-      info: { label: 'Informativo', icon: Info, color: 'bg-blue-500 text-white' },
-      warning: { label: 'Aviso', icon: AlertTriangle, color: 'bg-yellow-500 text-black' },
-      urgent: { label: 'Urgente', icon: AlertTriangle, color: 'bg-red-500 text-white' },
-      maintenance: { label: 'Manutenção', icon: CheckCircle, color: 'bg-purple-500 text-white' }
+  useEffect(() => {
+    fetchNotices();
+  }, []);
+
+  const fetchNotices = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('notices')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotices((data || []) as Notice[]);
+    } catch (error) {
+      console.error('Erro ao carregar avisos:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os avisos.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPriorityBadge = (priority: string) => {
+    const priorityConfig: { [key: string]: { label: string; icon: any; variant: 'default' | 'secondary' | 'destructive' | 'outline' } } = {
+      low: { label: 'Baixa', icon: Info, variant: 'secondary' },
+      normal: { label: 'Normal', icon: Info, variant: 'outline' },
+      high: { label: 'Alta', icon: AlertTriangle, variant: 'default' },
+      urgent: { label: 'Urgente', icon: AlertTriangle, variant: 'destructive' }
     };
 
-    const config = typeConfig[type];
+    const config = priorityConfig[priority] || priorityConfig.normal;
     const IconComponent = config.icon;
     
     return (
-      <Badge className={config.color}>
+      <Badge variant={config.variant}>
         <IconComponent className="h-3 w-3 mr-1" />
         {config.label}
       </Badge>
@@ -91,11 +82,11 @@ const NoticesManagement: React.FC = () => {
       notice.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       notice.content.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesType = typeFilter === 'all' || notice.type === typeFilter;
+    const matchesType = typeFilter === 'all' || notice.priority === typeFilter;
     
     const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && notice.isActive) ||
-      (statusFilter === 'inactive' && !notice.isActive);
+      (statusFilter === 'active' && notice.is_active) ||
+      (statusFilter === 'inactive' && !notice.is_active);
 
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -108,16 +99,87 @@ const NoticesManagement: React.FC = () => {
     return new Date(dateStr).toLocaleString('pt-BR');
   };
 
-  const handleAddNotice = () => {
-    // Aqui seria implementada a lógica de adicionar aviso
-    console.log('Adicionando aviso:', newNotice);
-    setIsAddDialogOpen(false);
-    setNewNotice({ title: '', content: '', type: 'info', isActive: true, expiresAt: '' });
+  const handleAddNotice = async () => {
+    if (!newNotice.title.trim() || !newNotice.content.trim()) {
+      toast({
+        title: "Erro",
+        description: "Título e conteúdo são obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const noticeData = {
+        title: newNotice.title,
+        content: newNotice.content,
+        category: newNotice.category,
+        priority: newNotice.priority,
+        is_active: newNotice.isActive,
+        created_by: userData.user.id,
+        expires_at: newNotice.expiresAt ? new Date(newNotice.expiresAt).toISOString() : null
+      };
+
+      const { error } = await supabase
+        .from('notices')
+        .insert([noticeData]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Aviso publicado com sucesso!",
+      });
+
+      setIsAddDialogOpen(false);
+      setNewNotice({ title: '', content: '', category: 'general', priority: 'normal', isActive: true, expiresAt: '' });
+      fetchNotices();
+    } catch (error) {
+      console.error('Erro ao publicar aviso:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível publicar o aviso.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const toggleNoticeStatus = (noticeId: string) => {
-    // Aqui seria implementada a lógica de ativar/desativar aviso
-    console.log('Alterando status do aviso:', noticeId);
+  const toggleNoticeStatus = async (noticeId: string) => {
+    try {
+      const notice = notices.find(n => n.id === noticeId);
+      if (!notice) return;
+
+      const { error } = await supabase
+        .from('notices')
+        .update({ is_active: !notice.is_active })
+        .eq('id', noticeId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `Aviso ${!notice.is_active ? 'ativado' : 'desativado'} com sucesso!`,
+      });
+
+      fetchNotices();
+    } catch (error) {
+      console.error('Erro ao alterar status do aviso:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o status do aviso.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -167,16 +229,16 @@ const NoticesManagement: React.FC = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="type">Tipo</Label>
-                    <Select value={newNotice.type} onValueChange={(value: Notice['type']) => setNewNotice(prev => ({ ...prev, type: value }))}>
+                    <Label htmlFor="priority">Prioridade</Label>
+                    <Select value={newNotice.priority} onValueChange={(value: 'low' | 'normal' | 'high' | 'urgent') => setNewNotice(prev => ({ ...prev, priority: value }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="info">Informativo</SelectItem>
-                        <SelectItem value="warning">Aviso</SelectItem>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
                         <SelectItem value="urgent">Urgente</SelectItem>
-                        <SelectItem value="maintenance">Manutenção</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -230,11 +292,11 @@ const NoticesManagement: React.FC = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos Tipos</SelectItem>
-                <SelectItem value="info">Informativo</SelectItem>
-                <SelectItem value="warning">Aviso</SelectItem>
+                <SelectItem value="all">Todas Prioridades</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
                 <SelectItem value="urgent">Urgente</SelectItem>
-                <SelectItem value="maintenance">Manutenção</SelectItem>
               </SelectContent>
             </Select>
             
@@ -252,7 +314,12 @@ const NoticesManagement: React.FC = () => {
         </CardHeader>
         
         <CardContent>
-          {filteredNotices.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Carregando avisos...</p>
+            </div>
+          ) : filteredNotices.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nenhum aviso encontrado</p>
@@ -264,13 +331,13 @@ const NoticesManagement: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {getTypeBadge(notice.type)}
-                        <Badge variant={notice.isActive ? "default" : "secondary"}>
-                          {notice.isActive ? 'Ativo' : 'Inativo'}
+                        {getPriorityBadge(notice.priority)}
+                        <Badge variant={notice.is_active ? "default" : "secondary"}>
+                          {notice.is_active ? 'Ativo' : 'Inativo'}
                         </Badge>
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {formatDate(notice.publishedAt)}
+                          {formatDate(notice.created_at)}
                         </span>
                       </div>
                       
@@ -283,10 +350,10 @@ const NoticesManagement: React.FC = () => {
                       </div>
                       
                       <div className="text-xs text-muted-foreground">
-                        Publicado por: {notice.publishedBy}
-                        {notice.expiresAt && (
+                        Categoria: {notice.category}
+                        {notice.expires_at && (
                           <span className="ml-4">
-                            Expira em: {formatDateTime(notice.expiresAt)}
+                            Expira em: {formatDateTime(notice.expires_at)}
                           </span>
                         )}
                       </div>
@@ -298,7 +365,7 @@ const NoticesManagement: React.FC = () => {
                         variant="outline"
                         onClick={() => toggleNoticeStatus(notice.id)}
                       >
-                        {notice.isActive ? 'Desativar' : 'Ativar'}
+                        {notice.is_active ? 'Desativar' : 'Ativar'}
                       </Button>
                       <Button size="sm" variant="outline">
                         Editar

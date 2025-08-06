@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,47 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileText, Search, Filter, Plus, Download, Eye, Calendar } from 'lucide-react';
-
-interface Document {
-  id: string;
-  title: string;
-  description: string;
-  category: 'regulamento' | 'ata' | 'comunicado' | 'financeiro' | 'outros';
-  uploadedAt: string;
-  uploadedBy: string;
-  fileSize: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import { Document } from '@/types/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const DocumentsManagement: React.FC = () => {
-  const [documents] = useState<Document[]>([
-    {
-      id: '1',
-      title: 'Regulamento Interno do Condomínio',
-      description: 'Normas e regras de convivência do condomínio',
-      category: 'regulamento',
-      uploadedAt: '2024-01-15T10:00:00Z',
-      uploadedBy: 'Admin Sistema',
-      fileSize: '2.3 MB'
-    },
-    {
-      id: '2',
-      title: 'Ata da Assembleia - Janeiro 2024',
-      description: 'Registro da assembleia geral ordinária de janeiro',
-      category: 'ata',
-      uploadedAt: '2024-01-20T14:30:00Z',
-      uploadedBy: 'Síndico',
-      fileSize: '1.8 MB'
-    },
-    {
-      id: '3',
-      title: 'Demonstrativo Financeiro - Dezembro 2023',
-      description: 'Relatório de receitas e despesas do condomínio',
-      category: 'financeiro',
-      uploadedAt: '2024-01-05T09:15:00Z',
-      uploadedBy: 'Administradora',
-      fileSize: '895 KB'
-    }
-  ]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -57,20 +24,47 @@ const DocumentsManagement: React.FC = () => {
   const [newDocument, setNewDocument] = useState({
     title: '',
     description: '',
-    category: 'comunicado' as Document['category']
+    category: 'general'
   });
 
-  const getCategoryBadge = (category: Document['category']) => {
-    const categoryConfig = {
-      regulamento: { label: 'Regulamento', color: 'bg-blue-500 text-white' },
-      ata: { label: 'Ata', color: 'bg-green-500 text-white' },
-      comunicado: { label: 'Comunicado', color: 'bg-yellow-500 text-black' },
-      financeiro: { label: 'Financeiro', color: 'bg-purple-500 text-white' },
-      outros: { label: 'Outros', color: 'bg-gray-500 text-white' }
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar documentos:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os documentos.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryBadge = (category: string) => {
+    const categoryConfig: { [key: string]: { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } } = {
+      regulamento: { label: 'Regulamento', variant: 'default' },
+      ata: { label: 'Ata', variant: 'secondary' },
+      comunicado: { label: 'Comunicado', variant: 'outline' },
+      financeiro: { label: 'Financeiro', variant: 'destructive' },
+      general: { label: 'Geral', variant: 'outline' },
+      outros: { label: 'Outros', variant: 'secondary' }
     };
 
-    const config = categoryConfig[category];
-    return <Badge className={config.color}>{config.label}</Badge>;
+    const config = categoryConfig[category] || categoryConfig.general;
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const filteredDocuments = documents.filter(doc => {
@@ -87,11 +81,68 @@ const DocumentsManagement: React.FC = () => {
     return new Date(dateStr).toLocaleDateString('pt-BR');
   };
 
-  const handleAddDocument = () => {
-    // Aqui seria implementada a lógica de upload
-    console.log('Adicionando documento:', newDocument);
-    setIsAddDialogOpen(false);
-    setNewDocument({ title: '', description: '', category: 'comunicado' });
+  const formatFileSize = (bytes: number) => {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const handleAddDocument = async () => {
+    if (!newDocument.title.trim() || !newDocument.description?.trim()) {
+      toast({
+        title: "Erro",
+        description: "Título e descrição são obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const documentData = {
+        title: newDocument.title,
+        description: newDocument.description,
+        category: newDocument.category,
+        file_name: `${newDocument.title}.pdf`,
+        file_type: 'application/pdf',
+        file_url: '#',
+        file_size: 0,
+        uploaded_by: userData.user.id,
+        is_public: true
+      };
+
+      const { error } = await supabase
+        .from('documents')
+        .insert([documentData]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Documento adicionado com sucesso!",
+      });
+
+      setIsAddDialogOpen(false);
+      setNewDocument({ title: '', description: '', category: 'general' });
+      fetchDocuments();
+    } catch (error) {
+      console.error('Erro ao adicionar documento:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o documento.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -146,6 +197,7 @@ const DocumentsManagement: React.FC = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="general">Geral</SelectItem>
                         <SelectItem value="regulamento">Regulamento</SelectItem>
                         <SelectItem value="ata">Ata</SelectItem>
                         <SelectItem value="comunicado">Comunicado</SelectItem>
@@ -186,6 +238,7 @@ const DocumentsManagement: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas Categorias</SelectItem>
+                <SelectItem value="general">Geral</SelectItem>
                 <SelectItem value="regulamento">Regulamento</SelectItem>
                 <SelectItem value="ata">Ata</SelectItem>
                 <SelectItem value="comunicado">Comunicado</SelectItem>
@@ -197,7 +250,12 @@ const DocumentsManagement: React.FC = () => {
         </CardHeader>
         
         <CardContent>
-          {filteredDocuments.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Carregando documentos...</p>
+            </div>
+          ) : filteredDocuments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Nenhum documento encontrado</p>
@@ -212,7 +270,7 @@ const DocumentsManagement: React.FC = () => {
                         {getCategoryBadge(document.category)}
                         <span className="text-sm text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {formatDate(document.uploadedAt)}
+                          {formatDate(document.created_at)}
                         </span>
                       </div>
                       
@@ -225,7 +283,7 @@ const DocumentsManagement: React.FC = () => {
                       </div>
                       
                       <div className="text-xs text-muted-foreground">
-                        Enviado por: {document.uploadedBy} • {document.fileSize}
+                        Arquivo: {document.file_name} • {formatFileSize(document.file_size)}
                       </div>
                     </div>
                     
