@@ -88,6 +88,52 @@ const DocumentsManagement: React.FC = () => {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const handleViewDocument = (document: Document) => {
+    if (document.file_url && document.file_url !== '#') {
+      window.open(document.file_url, '_blank');
+    } else {
+      toast({
+        title: "Aviso",
+        description: "Arquivo não disponível para visualização.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadDocument = async (doc: Document) => {
+    if (doc.file_url && doc.file_url !== '#') {
+      try {
+        const response = await fetch(doc.file_url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = window.document.createElement('a');
+        a.href = url;
+        a.download = doc.file_name;
+        window.document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        window.document.body.removeChild(a);
+        
+        toast({
+          title: "Sucesso",
+          description: "Download iniciado!",
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível fazer o download do arquivo.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Aviso",
+        description: "Arquivo não disponível para download.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAddDocument = async () => {
     if (!newDocument.title.trim() || !newDocument.description?.trim()) {
       toast({
@@ -288,11 +334,18 @@ const DocumentsManagement: React.FC = () => {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleViewDocument(document)}
+                      >
                         <Eye className="h-4 w-4 mr-2" />
                         Visualizar
                       </Button>
-                      <Button size="sm">
+                      <Button 
+                        size="sm"
+                        onClick={() => handleDownloadDocument(document)}
+                      >
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </Button>

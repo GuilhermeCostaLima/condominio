@@ -22,8 +22,19 @@ const NoticesManagement: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
 
   const [newNotice, setNewNotice] = useState({
+    title: '',
+    content: '',
+    category: 'general',
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent',
+    isActive: true,
+    expiresAt: ''
+  });
+
+  const [editNotice, setEditNotice] = useState({
     title: '',
     content: '',
     category: 'general',
@@ -154,6 +165,65 @@ const NoticesManagement: React.FC = () => {
     }
   };
 
+  const handleEditNotice = (notice: Notice) => {
+    setEditingNotice(notice);
+    setEditNotice({
+      title: notice.title,
+      content: notice.content,
+      category: notice.category,
+      priority: notice.priority as 'low' | 'normal' | 'high' | 'urgent',
+      isActive: notice.is_active,
+      expiresAt: notice.expires_at ? new Date(notice.expires_at).toISOString().split('T')[0] : ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateNotice = async () => {
+    if (!editingNotice || !editNotice.title.trim() || !editNotice.content.trim()) {
+      toast({
+        title: "Erro",
+        description: "Título e conteúdo são obrigatórios.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const noticeData = {
+        title: editNotice.title,
+        content: editNotice.content,
+        category: editNotice.category,
+        priority: editNotice.priority,
+        is_active: editNotice.isActive,
+        expires_at: editNotice.expiresAt ? new Date(editNotice.expiresAt).toISOString() : null
+      };
+
+      const { error } = await supabase
+        .from('notices')
+        .update(noticeData)
+        .eq('id', editingNotice.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Aviso atualizado com sucesso!",
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingNotice(null);
+      setEditNotice({ title: '', content: '', category: 'general', priority: 'normal', isActive: true, expiresAt: '' });
+      fetchNotices();
+    } catch (error) {
+      console.error('Erro ao atualizar aviso:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o aviso.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const toggleNoticeStatus = async (noticeId: string) => {
     try {
       const notice = notices.find(n => n.id === noticeId);
@@ -273,6 +343,80 @@ const NoticesManagement: React.FC = () => {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Dialog de Edição */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Editar Aviso</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-title">Título</Label>
+                    <Input
+                      id="edit-title"
+                      value={editNotice.title}
+                      onChange={(e) => setEditNotice(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Digite o título do aviso"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-content">Conteúdo</Label>
+                    <Textarea
+                      id="edit-content"
+                      value={editNotice.content}
+                      onChange={(e) => setEditNotice(prev => ({ ...prev, content: e.target.value }))}
+                      placeholder="Digite o conteúdo do aviso"
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-priority">Prioridade</Label>
+                    <Select value={editNotice.priority} onValueChange={(value: 'low' | 'normal' | 'high' | 'urgent') => setEditNotice(prev => ({ ...prev, priority: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
+                        <SelectItem value="urgent">Urgente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="edit-expiresAt">Data de Expiração (Opcional)</Label>
+                    <Input
+                      id="edit-expiresAt"
+                      type="date"
+                      value={editNotice.expiresAt}
+                      onChange={(e) => setEditNotice(prev => ({ ...prev, expiresAt: e.target.value }))}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="edit-isActive"
+                      checked={editNotice.isActive}
+                      onCheckedChange={(checked) => setEditNotice(prev => ({ ...prev, isActive: checked }))}
+                    />
+                    <Label htmlFor="edit-isActive">Aviso ativo</Label>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleUpdateNotice}>
+                      Salvar Alterações
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4">
@@ -367,7 +511,11 @@ const NoticesManagement: React.FC = () => {
                       >
                         {notice.is_active ? 'Desativar' : 'Ativar'}
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleEditNotice(notice)}
+                      >
                         Editar
                       </Button>
                     </div>
