@@ -26,6 +26,8 @@ const DocumentsManagement: React.FC = () => {
     description: '',
     category: 'general'
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
@@ -88,9 +90,24 @@ const DocumentsManagement: React.FC = () => {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const handleViewDocument = (document: Document) => {
+  const handleViewDocument = async (document: Document) => {
     if (document.file_url && document.file_url !== '#') {
-      window.open(document.file_url, '_blank');
+      try {
+        // Get signed URL for viewing
+        const { data, error } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(document.file_url.replace('documents/', ''), 60 * 60); // 1 hour expiry
+
+        if (error) throw error;
+        
+        window.open(data.signedUrl, '_blank');
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível visualizar o documento.",
+          variant: "destructive"
+        });
+      }
     } else {
       toast({
         title: "Aviso",
@@ -103,7 +120,15 @@ const DocumentsManagement: React.FC = () => {
   const handleDownloadDocument = async (doc: Document) => {
     if (doc.file_url && doc.file_url !== '#') {
       try {
-        const response = await fetch(doc.file_url);
+        // Get signed URL for download
+        const { data, error } = await supabase.storage
+          .from('documents')
+          .createSignedUrl(doc.file_url.replace('documents/', ''), 60 * 60); // 1 hour expiry
+
+        if (error) throw error;
+
+        // Create download link
+        const response = await fetch(data.signedUrl);
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = window.document.createElement('a');
@@ -134,6 +159,13 @@ const DocumentsManagement: React.FC = () => {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
   const handleAddDocument = async () => {
     if (!newDocument.title.trim() || !newDocument.description?.trim()) {
       toast({
@@ -144,7 +176,17 @@ const DocumentsManagement: React.FC = () => {
       return;
     }
 
+    if (!selectedFile) {
+      toast({
+        title: "Erro",
+        description: "Selecione um arquivo para upload.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
+      setUploading(true);
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
         toast({
@@ -155,14 +197,25 @@ const DocumentsManagement: React.FC = () => {
         return;
       }
 
+      // Upload file to storage
+      const fileExt = selectedFile.name.split('.').pop();
+      const fileName = `${userData.user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      // Create document record
       const documentData = {
         title: newDocument.title,
         description: newDocument.description,
         category: newDocument.category,
-        file_name: `${newDocument.title}.pdf`,
-        file_type: 'application/pdf',
-        file_url: '#',
-        file_size: 0,
+        file_name: selectedFile.name,
+        file_type: selectedFile.type,
+        file_url: `documents/${fileName}`,
+        file_size: selectedFile.size,
         uploaded_by: userData.user.id,
         is_public: true
       };
@@ -180,6 +233,7 @@ const DocumentsManagement: React.FC = () => {
 
       setIsAddDialogOpen(false);
       setNewDocument({ title: '', description: '', category: 'general' });
+      setSelectedFile(null);
       fetchDocuments();
     } catch (error) {
       console.error('Erro ao adicionar documento:', error);
@@ -188,6 +242,8 @@ const DocumentsManagement: React.FC = () => {
         description: "Não foi possível adicionar o documento.",
         variant: "destructive"
       });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -253,12 +309,27 @@ const DocumentsManagement: React.FC = () => {
                     </Select>
                   </div>
                   
+                  <div>
+                    <Label htmlFor="file">Arquivo</Label>
+                    <Input
+                      id="file"
+                      type="file"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                    />
+                    {selectedFile && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Arquivo selecionado: {selectedFile.name}
+                      </p>
+                    )}
+                  </div>
+                  
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                       Cancelar
                     </Button>
-                    <Button onClick={handleAddDocument}>
-                      Adicionar
+                    <Button onClick={handleAddDocument} disabled={uploading}>
+                      {uploading ? "Uploading..." : "Adicionar"}
                     </Button>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,86 +12,123 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardProps {
   onNavigate: (section: string) => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const stats = [
+  const [stats, setStats] = useState([
     {
       title: 'Reservas Hoje',
-      value: '3',
+      value: '0',
       icon: Calendar,
       color: 'text-primary',
-      trend: '+2 em relação a ontem'
+      trend: 'Carregando...'
     },
     {
       title: 'Moradores Ativos',
-      value: '95',
+      value: '0',
       icon: Users,
       color: 'text-green-600',
-      trend: '79% de ocupação'
+      trend: 'Carregando...'
     },
     {
       title: 'Avisos Pendentes',
-      value: '2',
+      value: '0',
       icon: Bell,
       color: 'text-orange-600',
-      trend: 'Necessita atenção'
+      trend: 'Carregando...'
     },
     {
       title: 'Documentos',
-      value: '12',
+      value: '0',
       icon: FileText,
       color: 'text-blue-600',
-      trend: 'Atualizados este mês'
+      trend: 'Carregando...'
     }
-  ];
+  ]);
+  
+  const [recentReservations, setRecentReservations] = useState<any[]>([]);
+  const [notices, setNotices] = useState<any[]>([]);
 
-  const recentReservations = [
-    {
-      id: '1',
-      resident: 'Maria Silva',
-      apartment: 'Apto 101',
-      date: '2024-01-15',
-      time: '19:00-23:00',
-      status: 'confirmed' as const
-    },
-    {
-      id: '2',
-      resident: 'João Santos',
-      apartment: 'Apto 205',
-      date: '2024-01-16',
-      time: '14:00-18:00',
-      status: 'pending' as const
-    },
-    {
-      id: '3',
-      resident: 'Ana Costa',
-      apartment: 'Apto 312',
-      date: '2024-01-17',
-      time: '20:00-00:00',
-      status: 'confirmed' as const
-    }
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const notices = [
-    {
-      id: '1',
-      title: 'Manutenção dos Elevadores',
-      date: '2024-01-15',
-      priority: 'high' as const,
-      preview: 'Programada para o próximo sábado...'
-    },
-    {
-      id: '2',
-      title: 'Assembleia Geral Ordinária',
-      date: '2024-01-20',
-      priority: 'medium' as const,
-      preview: 'Convocação para assembleia do dia 25/01...'
+  const fetchDashboardData = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Fetch today's reservations
+      const { data: todayReservations } = await supabase
+        .from('reservations')
+        .select('*')
+        .eq('date', today);
+
+      // Fetch all profiles
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*');
+
+      // Fetch active notices
+      const { data: activeNotices } = await supabase
+        .from('notices')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      // Fetch documents
+      const { data: documents } = await supabase
+        .from('documents')
+        .select('*');
+
+      // Fetch recent reservations
+      const { data: recentRes } = await supabase
+        .from('reservations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Update stats
+      setStats([
+        {
+          title: 'Reservas Hoje',
+          value: (todayReservations?.length || 0).toString(),
+          icon: Calendar,
+          color: 'text-primary',
+          trend: 'Para hoje'
+        },
+        {
+          title: 'Moradores Ativos',
+          value: (profiles?.length || 0).toString(),
+          icon: Users,
+          color: 'text-green-600',
+          trend: 'Total cadastrados'
+        },
+        {
+          title: 'Avisos Ativos',
+          value: (activeNotices?.length || 0).toString(),
+          icon: Bell,
+          color: 'text-orange-600',
+          trend: 'Publicados'
+        },
+        {
+          title: 'Documentos',
+          value: (documents?.length || 0).toString(),
+          icon: FileText,
+          color: 'text-blue-600',
+          trend: 'Disponíveis'
+        }
+      ]);
+
+      setRecentReservations(recentRes || []);
+      setNotices(activeNotices?.slice(0, 2) || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
     }
-  ];
+  };
 
   return (
     <div className="space-y-6">
@@ -137,32 +174,39 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentReservations.map((reservation) => (
-                <div key={reservation.id} className="flex items-center justify-between p-3 bg-accent/20 rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-foreground">{reservation.resident}</p>
-                      <span className="text-sm text-muted-foreground">• {reservation.apartment}</span>
+              {recentReservations.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">Nenhuma reserva recente</p>
+              ) : (
+                recentReservations.map((reservation) => (
+                  <div key={reservation.id} className="flex items-center justify-between p-3 bg-accent/20 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground">{reservation.resident_name}</p>
+                        <span className="text-sm text-muted-foreground">• {reservation.apartment_number}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(reservation.date).toLocaleDateString('pt-BR')} • {reservation.time_slot}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{reservation.event}</p>
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(reservation.date).toLocaleDateString('pt-BR')} • {reservation.time}
-                      </span>
-                    </div>
+                    <Badge 
+                      variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}
+                      className="ml-2"
+                    >
+                      {reservation.status === 'confirmed' ? (
+                        <><CheckCircle className="h-3 w-3 mr-1" /> Confirmada</>
+                      ) : reservation.status === 'pending' ? (
+                        <><Clock className="h-3 w-3 mr-1" /> Pendente</>
+                      ) : (
+                        <><AlertCircle className="h-3 w-3 mr-1" /> {reservation.status}</>
+                      )}
+                    </Badge>
                   </div>
-                  <Badge 
-                    variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}
-                    className="ml-2"
-                  >
-                    {reservation.status === 'confirmed' ? (
-                      <><CheckCircle className="h-3 w-3 mr-1" /> Confirmada</>
-                    ) : (
-                      <><Clock className="h-3 w-3 mr-1" /> Pendente</>
-                    )}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -181,24 +225,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {notices.map((notice) => (
-                <div key={notice.id} className="p-3 bg-accent/20 rounded-lg">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-foreground">{notice.title}</h4>
-                        {notice.priority === 'high' && (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
-                        )}
+              {notices.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">Nenhum aviso ativo</p>
+              ) : (
+                notices.map((notice) => (
+                  <div key={notice.id} className="p-3 bg-accent/20 rounded-lg">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-foreground">{notice.title}</h4>
+                          {notice.priority === 'high' && (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {notice.content.substring(0, 100)}...
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {new Date(notice.created_at).toLocaleDateString('pt-BR')}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{notice.preview}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(notice.date).toLocaleDateString('pt-BR')}
-                      </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
