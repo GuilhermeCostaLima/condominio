@@ -316,6 +316,7 @@ const DocumentsManagement: React.FC = () => {
                       type="file"
                       onChange={handleFileChange}
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt"
+                      className="cursor-pointer"
                     />
                     {selectedFile && (
                       <p className="text-sm text-muted-foreground mt-1">
@@ -329,7 +330,7 @@ const DocumentsManagement: React.FC = () => {
                       Cancelar
                     </Button>
                     <Button onClick={handleAddDocument} disabled={uploading}>
-                      {uploading ? "Uploading..." : "Adicionar"}
+                      {uploading ? "Enviando..." : "Adicionar"}
                     </Button>
                   </div>
                 </div>

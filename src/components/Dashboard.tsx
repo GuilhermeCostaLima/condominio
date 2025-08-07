@@ -134,7 +134,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
+        <h2 className="text-3xl font-bold text-foreground">Painel de Controle</h2>
         <p className="text-muted-foreground">Bem-vindo ao sistema de gestão do condomínio</p>
       </div>
 

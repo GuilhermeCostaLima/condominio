@@ -45,6 +45,10 @@
     --available: 142 76% 36%;
     --booked: 0 84% 60%;
     --pending: 38 92% 50%;
+    --urgent: 0 84% 60%;
+    --high: 14 100% 57%;
+    --normal: 38 92% 50%;
+    --low: 142 76% 36%;
     
     /* Gradientes */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-hover)));

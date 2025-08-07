@@ -43,7 +43,7 @@ const CondominiumLayout: React.FC<CondominiumLayoutProps> = ({ children, activeS
   ];
 
   const adminItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'dashboard', label: 'Painel', icon: Home },
     { id: 'reservations', label: 'Reservas', icon: Calendar },
     { id: 'residents', label: 'Moradores', icon: Users },
     { id: 'documents', label: 'Documentos', icon: FileText },

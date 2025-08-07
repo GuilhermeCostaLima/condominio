@@ -64,6 +64,10 @@ export default {
 				available: 'hsl(var(--available))',
 				booked: 'hsl(var(--booked))',
 				pending: 'hsl(var(--pending))',
+				urgent: 'hsl(var(--urgent))',
+				high: 'hsl(var(--high))',
+				normal: 'hsl(var(--normal))',
+				low: 'hsl(var(--low))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
